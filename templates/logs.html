@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Logs</title>
+  <link rel="stylesheet" href="static/logs.css">
+  <script src="https://kit.fontawesome.com/ae201b47ce.js" crossorigin="anonymous"></script>
+  
+</head>
+
+<header>
+  <div class="header-container">
+      <div class="titulo">
+        <h1 class="header-title">Condomínio Vitória</h1>
+      </div>
+      <div class="header-content">
+        {% if 'username' in session %}
+          <p>Bem-vindo, {{ session['username'] }}! Nível de Acesso: {{ session['nivel_acesso'] }}</p>
+          <a href="{{ url_for('logout') }}" class="logout-link"> Sair <i class="fas fa-sign-out-alt"></i></a>
+
+            <div class="voltar">
+              <a href="/" ><i class="fa-solid fa-arrow-left"></i></a>
+            </div>
+            {% if session['nivel_acesso'] == 'ADM' %}
+            <div class="dropdown">
+              <button class="dropbtn">Menu 
+                <i class="fa fa-caret-down"></i>
+              </button>
+              <div class="dropdown-content">
+                <a href="/" class="cadastro-link"> Home <i class="fa-solid fa-building-user"></i></a>  
+                <a href="{{ url_for('cadastroApartamento') }}" class="cadastro-link"> Cadastro <i class="fas fa-user-plus"></i></a>
+                <a href="{{ url_for('crudApartamento') }}" class="cadastro-link"> Alteração <i class="fa-solid fa-pen-to-square"></i> e Exclusão  <i class="fa-solid fa-trash"></i></i></a>
+                <a href="{{ url_for('logs') }}" class="cadastro-link"> Relatorio <i class="fas fa-user-plus"></i></a>
+              </div>
+
+          </div>
+          {% endif %}
+        {% endif %}
+      </div>
+  </div>
+</header>
+
+<body>
+<!-- Adicione este formulário no início do corpo da sua página -->
+<div class="form-container">
+    <form action="{{ url_for('logs') }}" method="GET">
+      <h3>Filtros</h3>
+      <label for="filtro_apartamento">Apartamento:</label>
+      <input type="text" name="filtro_apartamento" id="filtro_apartamento" placeholder="Digite o apartamento">
+      <label for="filtro_placa">Placa:</label>
+      <input type="text" name="filtro_placa" id="filtro_placa" placeholder="Digite a placa">
+      <input type="hidden" name="filtro_original" value="">
+        <div class="dibButtons">
+            <button type="submit">Filtrar</button>
+            <button type="button" onclick="limparFiltro()">Limpar filtro</button>
+        </div>
+    </form>
+  </div>
+  
+  
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Usuário</th>
+                <th>Apartamento</th>
+                <th>Placa</th>
+                <th>Ação</th>
+                <th>Data</th>
+                <th>Hora</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Ajuste o loop para iterar apenas sobre os últimos 10 registros -->
+                {% for log in logs[::-1][:10] %}
+                <tr>
+                    <td>{{ log.id }}</td>
+                    <td>{{ log.usuario }}</td>
+                    <td>{{ log.apartamento }}</td>
+                    <td>{{ log.placa }}</td>
+                    <td>{{ log.acao }}</td>
+                    <td>{{ log.data.strftime('%d/%m/%Y') }}</td>
+                    <td>{{ log.hora }}</td>
+                </tr>
+                {% endfor %}
+        </tbody>
+    </table>
+
+
+    <script>
+        function limparFiltro() {
+          // Limpa o valor do campo de texto
+          document.getElementById('filtro_apartamento').value = '';
+          // Atualiza o valor do campo de texto oculto para o valor original do filtro
+          document.querySelector('input[name="filtro_original"]').value = '';
+          // Envia o formulário
+          document.querySelector('form').submit();
+        }
+      </script>
+
+
+    <footer id="rodapeCSS">
+        <div class="footer-container">
+            <p>© 2024 Condomínio Vitória. Todos os direitos reservados.</p>
+        </div>
+      </footer>
+      </body>
+
+
+      </html>

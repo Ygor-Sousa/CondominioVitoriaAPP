@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Gerenciamento de Vagas de Garagem</title>
+  <link rel="stylesheet" href="static/crudApartamento.css">
+  <script src="https://kit.fontawesome.com/ae201b47ce.js" crossorigin="anonymous"></script>
+  
+</head>
+
+<header>
+  <div class="header-container">
+      <div class="titulo">
+        <h1 class="header-title">Condomínio Vitória</h1>
+      </div>
+      <div class="header-content">
+        {% if 'username' in session %}
+          <p>Bem-vindo, {{ session['username'] }}! Nível de Acesso: {{ session['nivel_acesso'] }}</p>
+          <a href="{{ url_for('logout') }}" class="logout-link"> Sair <i class="fas fa-sign-out-alt"></i></a>
+
+            <div class="voltar">
+              <a href="/" ><i class="fa-solid fa-arrow-left"></i></a>
+            </div>
+            {% if session['nivel_acesso'] == 'ADM' %}
+            <div class="dropdown">
+              <button class="dropbtn">Menu 
+                <i class="fa fa-caret-down"></i>
+              </button>
+              <div class="dropdown-content">
+                <a href="/" class="cadastro-link"> Home <i class="fa-solid fa-building-user"></i></a>  
+                <a href="{{ url_for('cadastroApartamento') }}" class="cadastro-link"> Cadastro <i class="fas fa-user-plus"></i></a>
+                <a href="{{ url_for('crudApartamento') }}" class="cadastro-link"> Alteração <i class="fa-solid fa-pen-to-square"></i> e Exclusão  <i class="fa-solid fa-trash"></i></i></a>
+                <a href="{{ url_for('logs') }}" class="cadastro-link"> Relatorio <i class="fas fa-user-plus"></i></a>
+              </div>
+
+          </div>
+          {% endif %}
+        {% endif %}
+      </div>
+  </div>
+</header>
+
+
+<body>
+  <h1>Alteração e Exclusão</h1>
+  <div class="container">
+  <!-- Verifica se há uma mensagem de sucesso para exibir -->
+  {% if mensagem_sucesso %}
+      <div class="mensagem-sucesso" id="mensagemSucesso">{{ mensagem_sucesso }}</div>
+  {% endif %}
+
+  <form method="post" action="{{ url_for('crudApartamento') }}"  >
+      <input type="hidden" name="id" id="id" required>
+      <input type="hidden" name="infoCarro" id="infoCarro" required>
+      <table>
+        <tr>
+          <td><label for="apartamento">Apartamento:</label></td>
+          <td><label for="morador">Morador:</label></td>
+          <td><label for="placa">Placa:</label><i onclick="rodape()" class="fas fa-search" id="search-icon"></i></td>
+          <td><label for="veiculo">Veículo:</label></td>
+          <td><label for="cor">Cor:</label></td>
+          <td><label for="carroMoto">Carro ou Moto</label></td>
+        </tr> 
+        <tr>
+          <td><input class="form" type="text" name="apartamento" id="apartamento" placeholder="Digite o Apartamento" required></td>
+          <td><input class="form" type="text" name="morador" id="morador" placeholder="Digite o nome do Morador" required></td>
+          <!-- <td><input class="form" type="text" name="placa" id="placa" required></td>    -->
+          <td id="iconePesq"><input class="form" type="text" name="placa" id="placa" placeholder="Pesquisar por placa..." required></td>
+          <td><input class="form" type="text" name="veiculo" id="veiculo" placeholder="Digite o Veiculo" required></td>
+          <td><input class="form" type="text" name="cor" id="cor" placeholder="Digite a cor"></td>
+          <td>
+              <select class="form" name="tipo_veiculo" id="tipo_veiculo" required>
+                  <option value="selecione">Selecione</option>
+                  <option value="carro">Carro</option>
+                  <option value="moto">Moto</option>
+              </select>
+          </td>      
+        </tr>
+      </table>
+      <button id="limparPesquisa" type="submit" onclick="verificarCampos()">Salvar</button>
+    </form>
+  
+
+
+   
+
+
+    <div class="confirmation-dialog" id="confirmation-dialog">
+      <h2>Confirmar Alteração</h2>
+      <p>Tem certeza de que deseja salvar?</p>
+      <div class="confirmation-buttons">
+        <button id="btn-confirm" class="btn-confirm">Salvar</button>
+        <button id="btn-cancel" class="btn-cancel">Cancelar</button>
+      </div>
+    </div>
+
+      <!-- Inicialize a lista blocos -->
+    {% set blocos = [] %}
+
+    <!-- Adicione a div que retornará todos os blocos -->
+    <div id="blocos-container">
+      {% for apartamento in apartamentos %}
+          {% if apartamento.bloco not in blocos %}
+              {% set _ = blocos.append(apartamento.bloco) %}
+              <div class="bloco" id="{{ apartamento.bloco }}" onclick="rodape()">{{ apartamento.bloco }}</div>
+          {% endif %}
+      {% endfor %}
+  </div>
+
+  <div id="lista" class="container">
+    <table id="apartamentos" class="coluna">
+        <thead>
+            <tr>
+                
+                <th>Apartamento</th>
+                <th>Morador</th>
+                <th>Veículo</th>
+                <th>Cor</th>
+                <th>Placa</th>
+                <th style="text-align: center;">Ações</th>
+                <!-- <th>Status - Carros</th>
+                <th>Status - Motos</th> -->
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+
+  
+
+  <script>
+    const url = "/api/apartamentos";
+
+    document.addEventListener('DOMContentLoaded', function() {
+    // Adiciona um evento de clique a todas as divs de bloco
+    document.querySelectorAll('.bloco').forEach(function(bloco) {
+        bloco.addEventListener('click', function() {
+            // Obtém o ID do bloco clicado
+            var blocoId = bloco.id;
+
+            // Envia uma solicitação AJAX ao servidor para obter as informações do bloco clicado
+            fetch('/api/apartamentos?bloco=' + blocoId)
+                .then(response => response.json())
+                .then(data => {
+                    // Renderiza os apartamentos na div de lista
+                    renderApartamentos(data);
+                })
+                .catch(error => console.error('Erro ao obter informações do bloco:', error));
+        });
+    });
+});
+
+
+
+// Adiciona evento de clique para o botão de confirmação
+document.getElementById("btn-confirm").addEventListener("click", function() {
+    // Envia o formulário
+    console.log("Voce confirmou")
+    document.getElementById("confirmation-dialog").style.display = "none";
+});
+
+// Adiciona evento de clique para o botão de cancelamento
+document.getElementById("btn-cancel").addEventListener("click", function() {
+    // Oculta a caixa de diálogo de confirmação
+    console.log("Voce cancelou")
+    document.getElementById("confirmation-dialog").style.display = "none";
+});
+
+
+// Função para renderizar os apartamentos na tabela
+function renderApartamentos(apartamentos) {
+    const tbody = document.querySelector("#apartamentos tbody");
+    tbody.innerHTML = ''; // Limpa o conteúdo atual da tabela
+
+    for (const apartamento of apartamentos) {
+        for (const carro of apartamento.carros) {
+            const tr = document.createElement("tr");
+
+            // Verifica se o último caractere do número do apartamento é ímpar ou par
+            const ultimoCaractere = parseInt(apartamento.apartamento.slice(-1));
+            const corClasse = ultimoCaractere % 2 === 0 ? 'apartamento-par' : 'apartamento-impar';
+            tr.classList.add(corClasse); // Adiciona a classe de cor ao <tr>
+
+            // Adiciona um evento de clique a cada <tr>
+            tr.addEventListener('click', function() {
+                funcaoPlaca(infoCarro, apartamento.id, apartamento.apartamento, apartamento.morador, carro.veiculo, carro.cor, carro.placa);
+            });
+
+            tr.innerHTML = `
+                <td>${apartamento.apartamento}</td>
+                <td>${apartamento.morador}</td>
+                <td>${carro.veiculo}</td>
+                <td>${carro.cor}</td>
+                <td>${carro.placa}</td>
+                <td class="icons">
+                  <i class="fa-regular fa-pen-to-square"></i>
+                  <i class="fa-solid fa-trash" style="color: red"></i>
+                </td>  
+            `;
+
+              tbody.appendChild(tr);
+        }
+    }
+}
+
+
+    function funcaoPlaca(infoCarro, id, apartamento, morador, veiculo, cor, placa) {
+      console.log(`APTO selecionado: ${id} apartamento: ${apartamento} Morador: ${morador} Veiculo clicada: ${veiculo} Cor: ${cor} Placa:${placa}`);
+  
+      // Preenche os campos do formulário com os dados do apartamento selecionado
+      document.getElementById("id").value = id;
+      document.getElementById("apartamento").value = apartamento;
+      document.getElementById("morador").value = morador;
+      document.getElementById("placa").value = placa;
+      document.getElementById("veiculo").value = veiculo;
+      document.getElementById("cor").value = cor;
+      
+
+      selecionarOption(presente);
+  }
+
+
+
+  function selecionarOption(valor) {
+    // Obtenha o elemento select
+    var selectElement = document.getElementById("presente");
+
+    // Itere sobre as opções do select
+    for (var i = 0; i < selectElement.options.length; i++) {
+        // Verifique se o valor da opção é igual ao valor desejado
+        if (selectElement.options[i].value === valor) {
+            // Defina a opção como selecionada
+            selectElement.selectedIndex = i;
+            break;
+        }
+    }
+
+    const optionVazia = document.getElementById('vazio');
+
+    // Desabilita a opção vazia
+    optionVazia.disabled = true;
+
+    // Opcional: Adiciona um texto informativo à opção vazia
+    optionVazia.textContent = 'Selecione um status';
+
+  }
+
+  function limpar(){
+    // Limpe os campos do formulário se nenhum apartamento for encontrado
+                document.getElementById("id").value = "";
+                document.getElementById("infoCarro").value = "";
+                document.getElementById("apartamento").value = "";
+                document.getElementById("morador").value = "";
+                document.getElementById("carros").value = "";
+                document.getElementById("veiculo").value = "";
+                document.getElementById("cor").value = "";
+    
+  }
+
+
+// Adiciona evento de clique ao ícone de pesquisa
+document.getElementById("search-icon").addEventListener("click", function(event) {
+    event.preventDefault(); // Impede o comportamento padrão do clique no ícone
+
+    // Obtém o valor do campo de carros
+    var carrosQuery = document.getElementById("carros").value;
+
+    // Envia uma solicitação AJAX para a rota de pesquisa
+    fetch('/search?query=' + carrosQuery)
+        .then(response => response.json())
+        .then(data => {
+            // Verifique se foram retornados dados de apartamento
+            if (data.length > 0) {
+                // Preencha os campos do formulário com as informações do primeiro apartamento retornado
+                const apartamento = data[0]; // Vamos supor que apenas o primeiro apartamento seja retornado
+                document.getElementById("id").value = apartamento.id; // Preenche o campo 'id' com o valor do ID do apartamento
+                document.getElementById("apartamento").value = apartamento.apartamento;
+                document.getElementById("morador").value = apartamento.morador;
+                document.getElementById("veiculo").value = apartamento.veiculo;
+                document.getElementById("cor").value = apartamento.cor;
+
+                // Encontra a posição da placa no array de carros
+                const carro = apartamento.carros.find(carro => carro.placa === carrosQuery);
+                const infoCarro = apartamento.carros.indexOf(carro);
+                document.getElementById("infoCarro").value = infoCarro;
+
+                // Renderize novamente a lista de apartamentos para refletir as alterações nos campos
+                renderApartamentos(data);
+            } else {
+                // Limpe os campos do formulário se nenhum apartamento for encontrado
+                document.getElementById("id").value = "";
+                document.getElementById("bloco").value = "";
+                document.getElementById("numero").value = "";
+                document.getElementById("morador").value = "";
+                document.getElementById("infoCarro").value = "";
+                document.getElementById("presente").value = ""; // Ajuste conforme necessário
+            }
+        })
+        .catch(error => console.error('Erro ao pesquisar carros:', error));
+});
+
+
+
+
+
+  function rodape(){
+    document.getElementById("rodapeCSS").style.position = "relative";
+  }
+
+
+    async function main() {
+      const apartamentos = await getApartamentos();
+      renderApartamentos(apartamentos);
+    }
+
+    main();
+  </script>
+
+<footer id="rodapeCSS">
+  <div class="footer-container">
+      <p>© 2024 Condomínio Vitória. Todos os direitos reservados.</p>
+  </div>
+</footer>
+</body>
+</html>
