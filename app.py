@@ -255,6 +255,15 @@ def atualizar_vaga(apartamento, morador, placa, veiculo, cor, tipoVeiculo, prese
     cursor = conexao.cursor()
 
     # Executando a consulta SQL para atualizar a vaga
+     # Verificando se há outro carro presente para o mesmo apartamento
+    sql_select = "SELECT COUNT(*) FROM apartamentos WHERE bloco = %s AND apartamento = %s AND JSON_EXTRACT(placa, CONCAT('$[', %s, '].presente')) = false"
+    values_select = (bloco, apartamento, indiceCarro)
+    cursor.execute(sql_select, values_select)
+    resultado = cursor.fetchone()
+    if resultado[0] > 0:
+        # Se já existe um carro presente, retorne uma mensagem de erro ou faça o tratamento adequado
+        return jsonify({"error": "Já existe um carro presente para este apartamento."})
+
     # Executando a consulta SQL para atualizar a vaga
     sql_update = f"UPDATE apartamentos SET placa = JSON_SET(placa, '$[{indiceCarro}].presente', {presente}) WHERE id = %s"
     values_update = (id,)
@@ -265,12 +274,11 @@ def atualizar_vaga(apartamento, morador, placa, veiculo, cor, tipoVeiculo, prese
     movimentacao = ''
 
     if presente == 'true':
-        movimentacao = 'Saida'
+        movimentacao = 'Saída'
         print('if:', presente)
     else:
         movimentacao = 'Entrada'
         print('else:', presente)
-
 
     # Verificando se o update foi bem-sucedido
     if cursor.rowcount > 0:
