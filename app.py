@@ -26,11 +26,10 @@ def get_apartamentos():
   """
 
   conexao = mysql.connector.connect(
-    host="viaduct.proxy.rlwy.net",
-    user="root",
-    password="kSTsfrBzxbKuBMBgyyKtiRoQALCQbwtC",
-    port="15901", 
-    database="railway"
+    host="mysql.condominiovitoria.kinghost.net",
+    user="condominiovito",
+    password="F0xtr0t979",
+    database="condominiovito"
   )
 
   cursor = conexao.cursor()
@@ -82,11 +81,10 @@ def login():
 
 def validar_credenciais(username, password):
     conexao = mysql.connector.connect(
-        host="viaduct.proxy.rlwy.net",
-        user="root",
-        password="kSTsfrBzxbKuBMBgyyKtiRoQALCQbwtC",
-        port="15901", 
-        database="railway"
+        host="mysql.condominiovitoria.kinghost.net",
+        user="condominiovito",
+        password="F0xtr0t979",
+        database="condominiovito"
     )
 
     cursor = conexao.cursor()
@@ -119,11 +117,10 @@ def index():
 def executar_consulta():
     # Conecte-se ao banco de dados
     conexao = mysql.connector.connect(
-        host="viaduct.proxy.rlwy.net",
-        user="root",
-        password="kSTsfrBzxbKuBMBgyyKtiRoQALCQbwtC",
-        port="15901", 
-        database="railway"
+        host="mysql.condominiovitoria.kinghost.net",
+        user="condominiovito",
+        password="F0xtr0t979",
+        database="condominiovito"
     )
 
     cursor = conexao.cursor(dictionary=True)  # Definindo o cursor para retornar os resultados como dicionários
@@ -167,11 +164,10 @@ def resultado_consulta():
 def executar_consulta_blocos():
     # Conecte-se ao banco de dados
     conexao = mysql.connector.connect(
-        host="viaduct.proxy.rlwy.net",
-        user="root",
-        password="kSTsfrBzxbKuBMBgyyKtiRoQALCQbwtC",
-        port="15901", 
-        database="railway"
+        host="mysql.condominiovitoria.kinghost.net",
+        user="condominiovito",
+        password="F0xtr0t979",
+        database="condominiovito"
     )
 
     cursor = conexao.cursor()
@@ -241,11 +237,10 @@ def atualizar_vaga_route():
 
 def atualizar_vaga(apartamento, morador, placa, veiculo, cor, tipoVeiculo, presente, usuario, id, indiceCarro):
     conexao = mysql.connector.connect(
-        host="viaduct.proxy.rlwy.net",
-        user="root",
-        password="kSTsfrBzxbKuBMBgyyKtiRoQALCQbwtC",
-        port="15901", 
-        database="railway"
+        host="mysql.condominiovitoria.kinghost.net",
+        user="condominiovito",
+        password="F0xtr0t979",
+        database="condominiovito"
     )
 
     bloco = apartamento[0]
@@ -344,11 +339,10 @@ def get_presenca_placas(bloco):
     """
 
     conexao = mysql.connector.connect(
-        host="viaduct.proxy.rlwy.net",
-        user="root",
-        password="kSTsfrBzxbKuBMBgyyKtiRoQALCQbwtC",
-        port="15901", 
-        database="railway"
+        host="mysql.condominiovitoria.kinghost.net",
+        user="condominiovito",
+        password="F0xtr0t979",
+        database="condominiovito"
     )
 
     cursor = conexao.cursor(dictionary=True)
@@ -430,11 +424,10 @@ def cadastro():
 
 def cadastrar_usuario(username, senha_hash):
     conexao = mysql.connector.connect(
-        host="viaduct.proxy.rlwy.net",
-        user="root",
-        password="kSTsfrBzxbKuBMBgyyKtiRoQALCQbwtC",
-        port="15901", 
-        database="railway"
+        host="mysql.condominiovitoria.kinghost.net",
+        user="condominiovito",
+        password="F0xtr0t979",
+        database="condominiovito"
     )
 
     cursor = conexao.cursor()
@@ -478,11 +471,10 @@ def cadastroApartamento():
 
 def cadastrar_apartamento(apartamento, morador, placa, veiculo, cor, tipoVeiculo):
     conexao = mysql.connector.connect(
-        host="viaduct.proxy.rlwy.net",
-        user="root",
-        password="kSTsfrBzxbKuBMBgyyKtiRoQALCQbwtC",
-        port="15901", 
-        database="railway"
+        host="mysql.condominiovitoria.kinghost.net",
+        user="condominiovito",
+        password="F0xtr0t979",
+        database="condominiovito"
     )
 
     bloco = apartamento[0]
@@ -551,11 +543,10 @@ def crudApartamento():
 
 def update_apartamento(apartamento, morador, placa, veiculo, cor, tipoVeiculo, usuario, id):
     conexao = mysql.connector.connect(
-        host="viaduct.proxy.rlwy.net",
-        user="root",
-        password="kSTsfrBzxbKuBMBgyyKtiRoQALCQbwtC",
-        port="15901", 
-        database="railway"
+        host="mysql.condominiovitoria.kinghost.net",
+        user="condominiovito",
+        password="F0xtr0t979",
+        database="condominiovito"
     )
 
     
@@ -581,11 +572,10 @@ def update_apartamento(apartamento, morador, placa, veiculo, cor, tipoVeiculo, u
 
 def get_logs(filtro_apartamento=None, filtro_placa=None):
     conexao = mysql.connector.connect(
-        host="viaduct.proxy.rlwy.net",
-        user="root",
-        password="kSTsfrBzxbKuBMBgyyKtiRoQALCQbwtC",
-        port="15901", 
-        database="railway"
+        host="mysql.condominiovitoria.kinghost.net",
+        user="condominiovito",
+        password="F0xtr0t979",
+        database="condominiovito"
     )
 
     cursor = conexao.cursor(dictionary=True)
