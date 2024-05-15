@@ -251,7 +251,7 @@ def atualizar_vaga(apartamento, morador, placa, veiculo, cor, tipoVeiculo, prese
 
     # Executando a consulta SQL para atualizar a vaga
      # Verificando se há outro carro presente para o mesmo apartamento
-    sql_select = "SELECT COUNT(*) FROM apartamentos WHERE bloco = %s AND apartamento = %s AND JSON_EXTRACT(placa, CONCAT('$[', %s, '].presente')) = true"
+    sql_select = "SELECT COUNT(*) FROM apartamentos WHERE bloco = %s AND apartamento = %s AND JSON_EXTRACT(placa, CONCAT('$[', %s, '].presente')) = false"
     values_select = (bloco, apartamento, indiceCarro)
     cursor.execute(sql_select, values_select)
     resultado = cursor.fetchone()
