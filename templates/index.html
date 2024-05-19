@@ -54,8 +54,8 @@
       
       <table id="TabelaPesquisa">
         <tr>
-          <td class="apartamento"><label for="apartamento">APARTAMENTO:</label><i onclick="rodape(), pesquisa()" class="fas fa-search" id="search-icon-apto"></i></td>
-          <td class="placa"><label for="placa">PLACA:</label><i onclick="rodape(), pesquisa()" class="fas fa-search" id="search-icon"></i></td>
+          <td class="apartamento"><label for="apartamento">APARTAMENTO:</label><i onclick="rodape(), pesquisa('apartamento')" class="fas fa-search" id="search-icon-apto"></i></td>
+          <td class="placa"><label for="placa">PLACA:</label><i onclick="rodape(), pesquisa('placa')" class="fas fa-search" id="search-icon"></i></td>
           <td rowspan="2">
             <button id="limparPesquisa" type="search" onclick="limpar()"><strong>Nova Pesquisa</strong></button>    
           </td>
@@ -238,6 +238,7 @@ function atualizaContadoresAtual() {
         .catch(error => console.error('Erro ao obter resultados:', error));
 }
 
+
 /*  Função desativada, pois os dados ja aparecem na div bloco
     // Função para renderizar os totais de presentes e ausentes na div
 function renderTotais(totais) {
@@ -387,8 +388,6 @@ function renderApartamentos(apartamentos, totais) {
               tbody.appendChild(tr);
         }
     }
-    // Renderiza os totais de presentes e ausentes na div
-    renderTotais(totais);
 }
 
 
@@ -511,14 +510,21 @@ function funcaoPlaca(infoCarro, id, apartamento, morador, veiculo, cor, placa) {
 
 
     // Adiciona evento de clique ao ícone de pesquisa
-    function pesquisa() {
+    function pesquisa(tipo) {
     event.preventDefault(); // Impede o comportamento padrão do clique no ícone
 
     // Exibe o ícone de carregamento
     document.getElementById('loadingBloco').style.display = 'block';
 
-    var carrosQuery = document.getElementById("carros").value;
-    var apartamentoQuery = document.getElementById("apartamento").value; // Obtém o valor do campo de apartamento
+    if(tipo == 'apartamento'){
+      var apartamentoQuery = document.getElementById("apartamento").value; // Obtém o valor do campo de apartamento
+      var carrosQuery = '';
+    }else{
+      var carrosQuery = document.getElementById("carros").value;
+      var apartamentoQuery = ''; // Obtém o valor do campo de apartamento
+    }
+
+    
 
     fetch('/search?query=' + carrosQuery + '&apartamento=' + apartamentoQuery) // Adiciona o valor do apartamento à consulta
         .then(response => response.json())
@@ -553,6 +559,7 @@ function funcaoPlaca(infoCarro, id, apartamento, morador, veiculo, cor, placa) {
                 document.getElementById("infoCarro").value = "";
                 document.getElementById("presente").value = ""; // Ajuste conforme necessário
 
+                
                 // Esconde o ícone de carregamento após receber os dados 
                 document.getElementById('loadingBloco').style.display = 'none';
                 document.getElementById('erroAptoPlaca').style.display = 'block';
@@ -565,6 +572,7 @@ function funcaoPlaca(infoCarro, id, apartamento, morador, veiculo, cor, placa) {
         })
         .catch(error => {
                     console.error('Erro ao obter informações', error);
+                    console.log('else erradoooooo');
                     // Em caso de erro, também esconda o ícone de carregamento
                     document.getElementById('loadingBloco').style.display = 'none';
                     document.getElementById('erroAptoPlaca').style.display = 'block';
@@ -582,6 +590,13 @@ function funcaoPlaca(infoCarro, id, apartamento, morador, veiculo, cor, placa) {
   function rodape(){
     document.getElementById("rodapeCSS").style.position = "relative";
   }
+
+  document.addEventListener('DOMContentLoaded', async function() {
+    const apartamentos = await getApartamentos(); // Assumindo que você tenha uma função getApartamentos() que busca os dados dos apartamentos
+    renderApartamentos(apartamentos); // Renderiza os apartamentos na tabela ao carregar a página
+    atualizaContadoresAtual(); // Atualiza os totais de presentes e ausentes ao carregar a página
+});
+
 
 
     async function main() {
