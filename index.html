@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Gerenciamento de Vagas de Garagem</title>
+  <link rel="stylesheet" href="static/style.css">
+  <script src="https://kit.fontawesome.com/ae201b47ce.js" crossorigin="anonymous"></script>
+  
+</head>
+
+<header>
+  <div class="header-container">
+      <div class="titulo">
+        <h1 class="header-title">Condomínio Vitória</h1>
+      </div>
+      <div class="header-content">
+        {% if 'username' in session %}
+          <p>Bem-vindo, {{ session['username'] }}! Nível de Acesso: {{ session['nivel_acesso'] }}</p>
+          <a href="{{ url_for('logout') }}" class="logout-link"> Sair <i class="fas fa-sign-out-alt"></i></a>
+
+            <div class="voltar">
+              <a href="/" ><i class="fa-solid fa-arrow-left"></i></a>
+            </div>
+            {% if session['nivel_acesso'] == 'ADM' %}
+            <div class="dropdown">
+              <button class="dropbtn">Menu 
+                <i class="fa fa-caret-down"></i>
+              </button>
+              <div class="dropdown-content">
+                <a href="/" class="cadastro-link"> Home <i class="fa-solid fa-building-user"></i></a>  
+                <a href="{{ url_for('cadastroApartamento') }}" class="cadastro-link"> Cadastro <i class="fas fa-user-plus"></i></a>
+                <a href="{{ url_for('crudApartamento') }}" class="cadastro-link"> Alteração <i class="fa-solid fa-pen-to-square"></i> e Exclusão  <i class="fa-solid fa-trash"></i></i></a>
+                <a href="{{ url_for('logs') }}" class="cadastro-link"> Relatorio <i class="fas fa-user-plus"></i></a>
+              </div>
+
+          </div>
+          {% endif %}
+        {% endif %}
+      </div>
+  </div>
+</header>
+
+
+
+
+<body>
+
+    <h1>Controle de Entrada e Saida de Veiculos</h1>
+ 
+    <form method="post" action="" id="formulario-apartamento" >
+
+      <input type="hidden" name="id" id="id" required>
+      <input type="hidden" name="infoCarro" id="infoCarro" required>
+      
+      <table id="TabelaPesquisa">
+        <tr>
+          <td class="apartamento"><label for="apartamento">APARTAMENTO:</label><i onclick="rodape(), pesquisa('apartamento')" class="fas fa-search" id="search-icon-apto"></i></td>
+          <td class="placa"><label for="placa">PLACA:</label><i onclick="rodape(), pesquisa('placa')" class="fas fa-search" id="search-icon"></i></td>
+          <td rowspan="2">
+            <button id="limparPesquisa" type="search" onclick="limpar()"><strong>Nova Pesquisa</strong></button>    
+          </td>
+        </tr> 
+        <tr>
+          <td id="iconePesqApto"><input class="form" type="text" name="apartamento" id="apartamento" placeholder="Pesquisar por Apartamento..." required></td>
+          <td id="iconePesq"><input class="form" type="text" name="carros" id="carros" placeholder="Pesquisar por placa..." required></td>
+        </tr>
+
+        
+
+      </table>
+
+  
+      
+      
+
+
+    </form>
+
+
+   
+
+
+    <div class="confirmation-dialog" id="confirmation-dialog">
+      <h2>Confirmar Alteração</h2>
+      <p>Tem certeza de que deseja salvar?</p>
+      <div class="confirmation-buttons">
+        <button id="btn-confirm" class="btn-confirm">Salvar</button>
+        <button id="btn-cancel" class="btn-cancel">Cancelar</button>
+      </div>
+    </div>
+
+      <!-- Inicialize a lista blocos -->
+    {% set blocos = [] %}
+
+    <!-- Adicione a div que retornará todos os blocos -->
+    <div id="blocos-container">
+      {% for apartamento in apartamentos %}
+          {% if apartamento.bloco not in blocos %}
+              {% set _ = blocos.append(apartamento.bloco) %}
+              <div class="bloco" id="{{ apartamento.bloco }}" onclick="rodape()">{{ apartamento.bloco }}</div>
+          {% endif %}
+      {% endfor %}
+
+      <div class="bloco" id="condominioTotal"><h4>CONDOMINIO</h4>
+        <div>
+          <i class="fa-solid fa-car" style="color: #07c713;"></i>
+          <span id="resultadoFora"></span>
+          <i class="fa-solid fa-car" style="color: #e70a0a;"></i>
+          <span id="resultadoDentro"></span>
+      </div>
+    </div>
+  </div>
+
+  <div id="lista" class="container">
+    <table id="apartamentos" class="coluna">
+        <thead>
+            <tr>
+                
+                <th>APARTAMENTO</th>
+                <th>MORADOR</th>
+                <th>VEÍCULO</th>
+                <th>COR</th>
+                <th>PLACA</th>
+                <th style="text-align: center;">
+                  
+                    <i class="fa-solid fa-car" style="color: #07c713;"></i>
+                    <span id="totais-bloco-fora">FORA</span>
+                    <i class="fa-solid fa-car" style="color: #e70a0a;"></i>
+                    <span id="totais-bloco-dentro">DENTRO</span>
+                  </th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<div id="loading-screen">
+  <div id="loading-spinner"></div>
+  <p>Carregando...</p>
+</div>
+
+<div id="popup" class="popup">
+  <span class="close" onclick="closePopup()">&times;</span>
+  <p>A movimentação foi salva com sucesso!</p>
+</div>
+
+<div id="loadingBloco" style="display: none;">
+  <i class="fas fa-spinner fa-spin"></i> Carregando...
+</div>
+
+<div id="erroAptoPlaca" style="display: none;">
+  <i class="fa-solid fa-exclamation" style="color: #d10a0a;"></i> APARTAMENTO OU PLACA NÃO CADASTRADO...
+</div>
+
+
+
+    
+
+  <script>
+    const url = "/api/apartamentos";
+
+    // Exibe a tela de carregamento
+function showLoadingScreen() {
+  document.getElementById("loading-screen").style.display = "flex";
+}
+
+// Oculta a tela de carregamento
+function hideLoadingScreen() {
+  document.getElementById("loading-screen").style.display = "none";
+}
+
+// Função para mostrar o popup e ocultá-lo após 2,5 segundos
+function showPopup() {
+  var popup = document.getElementById('popup');
+  popup.classList.add('show', 'fade-in');
+
+  setTimeout(function() {
+    closePopup();
+  }, 2500);
+}
+
+// Função para fechar o popup
+function closePopup() {
+  var popup = document.getElementById('popup');
+  popup.classList.remove('show', 'fade-in');
+}
+// Antes de iniciar a solicitação AJAX para obter os resultados da consulta SQL
+showLoadingScreen();
+
+    // Faça uma solicitação AJAX para obter os resultados da consulta SQL
+    document.addEventListener('DOMContentLoaded', function() {
+        // Faça uma solicitação AJAX para obter os totais de presentes e ausentes
+        fetch("/resultado_consulta")
+            .then(response => response.json())
+            .then(data => {
+                // Exiba os totais na div "resultado"
+                document.getElementById("resultadoDentro").innerHTML = `${data.total_ausentes}`;
+                document.getElementById("resultadoFora").innerHTML = `${data.total_presentes}`;
+            })
+            .catch(error => console.error('Erro ao obter resultados:', error));
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+    // Faça uma solicitação AJAX para obter os resultados da consulta SQL
+    fetch("/resultado_consulta_blocos")
+        .then(response => response.json())
+        .then(data => {
+            // Oculta a tela de carregamento quando os dados são completamente carregados
+            hideLoadingScreen();
+            // Atualize cada elemento HTML com os resultados separados por bloco
+            for (let bloco in data) {
+                document.getElementById(bloco).innerHTML = '<h4>' + bloco + '</h4><div>' +data[bloco]+ '</div>';
+            }
+        })
+        .catch(error => console.error('Erro ao obter resultados:', error));
+});
+
+function atualizaContadoresAtual() {
+    // Solicitação AJAX para obter os totais de presentes e ausentes
+    fetch("/resultado_consulta")
+        .then(response => response.json())
+        .then(data => {
+            // Exibe os totais na div "resultadoDentro" e "resultadoFora"
+            document.getElementById("resultadoDentro").innerHTML = `${data.total_ausentes}`;
+            document.getElementById("resultadoFora").innerHTML = `${data.total_presentes}`;
+        })
+        .catch(error => console.error('Erro ao obter resultados:', error));
+
+    // Solicitação AJAX para obter os resultados da consulta SQL para os blocos
+    fetch("/resultado_consulta_blocos")
+        .then(response => response.json())
+        .then(data => {
+            // Atualize cada elemento HTML com os resultados separados por bloco
+            for (let bloco in data) {
+                document.getElementById(bloco).innerHTML = '<h4>' + bloco + '</h4><div>' + data[bloco] + '</div>';
+            }
+        })
+        .catch(error => console.error('Erro ao obter resultados:', error));
+}
+
+
+/*  Função desativada, pois os dados ja aparecem na div bloco
+    // Função para renderizar os totais de presentes e ausentes na div
+function renderTotais(totais) {
+    const totaisBlocoDentro = document.getElementById("totais-bloco-dentro");
+    if (totais) {
+        const { total_presentes, total_ausentes } = totais;
+        totaisBlocoDentro.innerHTML = `${total_ausentes} Dentro `;
+    } else {
+      totaisBlocoDentro.innerHTML = ''; // Limpa a div se não houver totais
+    }
+
+    const totaisBlocoFora = document.getElementById("totais-bloco-fora");
+    if (totais) {
+        const { total_presentes, total_ausentes } = totais;
+        totaisBlocoFora.innerHTML = `${total_presentes} Fora`;
+    } else {
+      totaisBlocoFora.innerHTML = ''; // Limpa a div se não houver totais
+    }
+} */
+
+    
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Adiciona um evento de clique a todas as divs de bloco
+    document.querySelectorAll('.bloco').forEach(function(bloco) {
+        bloco.addEventListener('click', function() {
+            // Obtém o ID do bloco clicado
+            var blocoId = bloco.id;
+
+            // Exibe o ícone de carregamento
+            document.getElementById('loadingBloco').style.display = 'block';
+
+            // Envia uma solicitação AJAX ao servidor para obter as informações do bloco clicado
+            fetch('/api/apartamentos?bloco=' + blocoId)
+                .then(response => response.json())
+                .then(data => {
+                    const apartamentos = data.apartamentos;
+                    const totais = { total_presentes: data.total_presentes, total_ausentes: data.total_ausentes };
+                    renderApartamentos(apartamentos, totais);
+
+                    // Esconde o ícone de carregamento após receber os dados
+                    document.getElementById('loadingBloco').style.display = 'none';
+                })
+                .catch(error => {
+                    console.error('Erro ao obter informações do bloco:', error);
+                    // Em caso de erro, também esconda o ícone de carregamento
+                    document.getElementById('loadingBloco').style.display = 'none';
+                });
+        });
+    });
+});
+
+
+      function atualizaListaVeiculos(blocoId) {
+        // Envia uma solicitação AJAX ao servidor para obter as informações do bloco clicado
+        // Exibe o ícone de carregamento
+        document.getElementById('loadingBloco').style.display = 'block';
+
+        // Envia uma solicitação AJAX ao servidor para obter as informações do bloco clicado
+        fetch('/api/apartamentos?bloco=' + blocoId)
+            .then(response => response.json())
+            .then(data => {
+                const apartamentos = data.apartamentos;
+                const totais = { total_presentes: data.total_presentes, total_ausentes: data.total_ausentes };
+                renderApartamentos(apartamentos, totais);
+
+                // Esconde o ícone de carregamento após receber os dados
+                document.getElementById('loadingBloco').style.display = 'none';
+            })
+            .catch(error => {
+                console.error('Erro ao obter informações do bloco:', error);
+                // Em caso de erro, também esconda o ícone de carregamento
+                document.getElementById('loadingBloco').style.display = 'none';
+            });
+      }
+
+
+// Função para renderizar os apartamentos na tabela
+function renderApartamentos(apartamentos, totais) {
+    const tbody = document.querySelector("#apartamentos tbody");
+    tbody.innerHTML = ''; // Limpa o conteúdo atual da tabela
+
+    for (const apartamento of apartamentos) {
+        for (const carro of apartamento.carros) {
+            const tr = document.createElement("tr");
+
+            // Verifica se o último caractere do número do apartamento é ímpar ou par
+            const ultimoCaractere = parseInt(apartamento.apartamento.slice(-1));
+            const corClasse = ultimoCaractere % 2 === 0 ? 'apartamento-par' : 'apartamento-impar';
+            tr.classList.add(corClasse); // Adiciona a classe de cor ao <tr>
+
+            // Adiciona um evento de clique a cada <tr>
+            tr.addEventListener('click', function() {
+                funcaoPlaca(infoCarro, apartamento.id, apartamento.apartamento, apartamento.morador, carro.veiculo, carro.cor, carro.placa);
+            });
+
+
+            let toggleClass = '';
+            let iconVeiculo = '';
+            let idInputVeiculo = '';
+            let forLabelVeiculo = '';
+
+            if (carro.tipoVeiculo === 'carro') {
+                toggleClass = 'toggle-car';
+                iconVeiculo = 'fa-car';
+                idInputVeiculo = 'chk';
+                forLabelVeiculo = 'chk';
+                console.log("carroooo");
+            } else if (carro.tipoVeiculo === 'moto') {
+                toggleClass = 'toggle-Moto';
+                iconVeiculo = 'fa-motorcycle';
+                idInputVeiculo = 'chkMoto';
+                forLabelVeiculo = 'chkMoto';
+                console.log("motoooo");
+            }else if(carro.placa === ''){
+              console.log('entrei no if carro placa nulo')
+              toggleClass = 'toggle-off'
+            }
+
+
+            // Encontra a posição da placa no array de carros
+            const carroEncontrado = apartamento.carros.find(c => c.placa === carro.placa);
+            const indiceCarro = apartamento.carros.indexOf(carroEncontrado);
+            document.getElementById("infoCarro").value = indiceCarro;
+
+           
+            
+            tr.innerHTML = `
+                <td>${apartamento.apartamento}</td>
+                <td>${apartamento.morador}</td>
+                <td>${carro.veiculo}</td>
+                <td>${carro.cor}</td>
+                <td>${carro.placa}</td>
+                <td class="${toggleClass}">
+                  <input type="checkbox" id="${carro.placa}" class="checkbox" ${carro.presente ? 'checked' : ''} onchange="togglePresente(this,${indiceCarro}, ${carro.id}, '${apartamento.id}', '${apartamento.apartamento}', '${apartamento.morador}', '${carro.veiculo}', '${carro.cor}', '${carro.placa}')">
+                    <label class="label" for="${carro.placa}">
+                        <i class="fa-solid ${iconVeiculo}" style="color: #07c713;"></i>
+                        <i class="fa-solid ${iconVeiculo}" style="color: #e70a0a;"></i>
+                        <div class="ball"></div>
+                    </label> 
+                </td>
+                
+            `;
+              
+            
+
+              tbody.appendChild(tr);
+        }
+    }
+}
+
+
+  function toggle () {
+    console.log ("Entrou");
+  }
+
+
+  function togglePresente(checkbox, indiceCarro, carroId, apartamentoId, apartamento, morador, veiculo, cor, placa) {
+    var bloco = apartamento.charAt(0).toUpperCase();
+    const presente = checkbox.checked ? "true" : "false";
+    // Aqui você pode fazer algo com o valor presente, como enviar uma requisição para o servidor
+    if (presente === "true") {
+        // Lógica quando o carro está presente
+        const tipoVeiculo = "carro"; // Adicionando o tipo de veículo
+        presentee = "true";
+        console.log(`Carro com ID ${apartamentoId} está presente ${indiceCarro}  ${presentee}`);
+        atualizarVaga(bloco, indiceCarro, apartamentoId, apartamento, morador, veiculo, cor, placa, tipoVeiculo, presentee);
+    } else {
+        const tipoVeiculo = "carro"; // Adicionando o tipo de veículo
+        presentee = "false";
+        // Lógica quando o carro está ausente
+        console.log(`Carro com ID ${apartamentoId} está ausente ${indiceCarro}  ${presentee} `);
+        atualizarVaga(bloco, indiceCarro, apartamentoId, apartamento, morador, veiculo, cor, placa, tipoVeiculo, presentee);
+    }
+}
+
+
+function atualizarVaga(bloco, indiceCarro, apartamentoId, apartamento, morador, veiculo, cor, placa, tipoVeiculo, presentee) {
+
+    // Crie um objeto FormData e adicione os dados do formulário a ele
+    var formData = new FormData();
+    formData.append('id', apartamentoId);
+    formData.append('apartamento', apartamento);
+    formData.append('morador', morador);
+    formData.append('placa', placa);
+    formData.append('veiculo', veiculo);
+    formData.append('cor', cor);
+    formData.append('tipo_veiculo', tipoVeiculo);
+    formData.append('presente', presentee);
+    formData.append('indiceCarro', indiceCarro);
+
+    
+    
+
+    // Faça uma solicitação AJAX POST para a rota adequada do seu backend (por exemplo, "/atualizar_vaga")
+    fetch('/atualizar_vaga', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Lide com a resposta do servidor, se necessário
+        console.log('Resposta do servidor:', data);
+        // Recarregue a página ou faça outra ação conforme necessário
+        // window.location.reload(); // Recarrega a página após a atualização
+        atualizaListaVeiculos(bloco);
+        
+        atualizaContadoresAtual();
+
+        // Chama a div atualizado com sucesso 
+        showPopup();
+    })
+    .catch(error => console.error('Erro ao enviar solicitação AJAX:', error));
+}
+
+
+function funcaoPlaca(infoCarro, id, apartamento, morador, veiculo, cor, placa) {
+      console.log(`APTO selecionado: ${id} apartamento: ${apartamento} Morador: ${morador} Veiculo clicada: ${veiculo} Cor: ${cor} Placa:${placa}`);
+  
+      // Preenche os campos do formulário com os dados do apartamento selecionado
+      document.getElementById("id").value = id;
+      document.getElementById("apartamento").value = apartamento;
+      document.getElementById("morador").value = morador;
+      document.getElementById("carros").value = placa;
+      document.getElementById("veiculo").value = veiculo;
+      document.getElementById("cor").value = cor;
+      
+
+      selecionarOption(presente);
+  }
+
+
+  function selecionarOption(valor) {
+    // Obtenha o elemento select
+    var selectElement = document.getElementById("presente");
+
+    // Itere sobre as opções do select
+    for (var i = 0; i < selectElement.options.length; i++) {
+        // Verifique se o valor da opção é igual ao valor desejado
+        if (selectElement.options[i].value === valor) {
+            // Defina a opção como selecionada
+            selectElement.selectedIndex = i;
+            break;
+        }
+    }
+
+    const optionVazia = document.getElementById('vazio');
+
+    // Desabilita a opção vazia
+    optionVazia.disabled = true;
+
+    // Opcional: Adiciona um texto informativo à opção vazia
+    optionVazia.textContent = 'Selecione um status';
+
+  }
+
+  function limpar() {
+    // Limpe os campos do formulário se nenhum apartamento for encontrado
+    document.getElementById("id").value = "";
+    document.getElementById("infoCarro").value = "";
+    document.getElementById("apartamento").value = "";
+    document.getElementById("carros").value = "";
+
+    // Redirecionar para a página inicial
+    window.location.href = "/";
+}
+
+
+
+
+    // Adiciona evento de clique ao ícone de pesquisa
+    function pesquisa(tipo) {
+    event.preventDefault(); // Impede o comportamento padrão do clique no ícone
+
+    // Exibe o ícone de carregamento
+    document.getElementById('loadingBloco').style.display = 'block';
+
+    if(tipo == 'apartamento'){
+      var apartamentoQuery = document.getElementById("apartamento").value; // Obtém o valor do campo de apartamento
+      var carrosQuery = '';
+    }else{
+      var carrosQuery = document.getElementById("carros").value;
+      var apartamentoQuery = ''; // Obtém o valor do campo de apartamento
+    }
+
+    
+
+    fetch('/search?query=' + carrosQuery + '&apartamento=' + apartamentoQuery) // Adiciona o valor do apartamento à consulta
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+            const apartamentos = data.apartamentos; // Obtém os apartamentos do objeto retornado
+            const totais = data.totais; // Obtém os totais do objeto retornado
+
+            // Verifique se foram retornados dados de apartamento
+            if (apartamentos.length > 0) {
+                // Preencha os campos do formulário com as informações do primeiro apartamento retornado
+                const apartamento = apartamentos[0]; // Ajuste aqui: utilize apartamentos[0] em vez de data[0]
+                document.getElementById("id").value = apartamento.id; // Preenche o campo 'id' com o valor do ID do apartamento
+                document.getElementById("apartamento").value = apartamento.apartamento;
+
+                // Encontra a posição da placa no array de carros
+                const carro = apartamento.carros.find(carro => carro.placa === carrosQuery);
+                const infoCarro = apartamento.carros.indexOf(carro);
+                document.getElementById("infoCarro").value = infoCarro;
+
+                // Renderize novamente a lista de apartamentos para refletir as alterações nos campos
+                renderApartamentos(apartamentos, totais);
+
+                // Esconde o ícone de carregamento após receber os dados
+                document.getElementById('loadingBloco').style.display = 'none';
+            } else {
+                // Limpe os campos do formulário se nenhum apartamento for encontrado
+                document.getElementById("id").value = "";
+                document.getElementById("bloco").value = "";
+                document.getElementById("numero").value = "";
+                document.getElementById("morador").value = "";
+                document.getElementById("infoCarro").value = "";
+                document.getElementById("presente").value = ""; // Ajuste conforme necessário
+
+                
+                // Esconde o ícone de carregamento após receber os dados 
+                document.getElementById('loadingBloco').style.display = 'none';
+                document.getElementById('erroAptoPlaca').style.display = 'block';
+                // Define um temporizador para ocultar o ícone de carregamento após 5 segundos (5000 milissegundos)
+                var timer = setTimeout(function() {
+                  document.getElementById('erroAptoPlaca').style.display = 'none';
+                  console.log('Ícone de erroAptoPlaca ocultado após 5 segundos.');
+                }, 5000);
+            }
+        })
+        .catch(error => {
+                    console.error('Erro ao obter informações', error);
+                    console.log('else erradoooooo');
+                    // Em caso de erro, também esconda o ícone de carregamento
+                    document.getElementById('loadingBloco').style.display = 'none';
+                    document.getElementById('erroAptoPlaca').style.display = 'block';
+                    // Define um temporizador para ocultar o ícone de carregamento após 5 segundos (5000 milissegundos)
+                    var timer = setTimeout(function() {
+                        document.getElementById('erroAptoPlaca').style.display = 'none';
+                        console.log('Ícone de erroAptoPlaca ocultado após 5 segundos.');
+                    }, 5000);
+                });
+};
+
+
+
+
+  function rodape(){
+    document.getElementById("rodapeCSS").style.position = "relative";
+  }
+
+  document.addEventListener('DOMContentLoaded', async function() {
+    const apartamentos = await getApartamentos(); // Assumindo que você tenha uma função getApartamentos() que busca os dados dos apartamentos
+    renderApartamentos(apartamentos); // Renderiza os apartamentos na tabela ao carregar a página
+    atualizaContadoresAtual(); // Atualiza os totais de presentes e ausentes ao carregar a página
+});
+
+
+
+    async function main() {
+      const apartamentos = await getApartamentos();
+      renderApartamentos(apartamentos);
+    }
+
+    main();
+  </script>
+
+<footer id="rodapeCSS">
+  <div class="footer-container">
+      <p>© 2024 Condomínio Vitória. Todos os direitos reservados.</p>
+  </div>
+</footer>
+</body>
+</html>
