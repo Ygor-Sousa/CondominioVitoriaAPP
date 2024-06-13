@@ -26,7 +26,7 @@ def get_apartamentos():
   """
 
   conexao = mysql.connector.connect(
-    host="mysql.condominiovitoria.kinghost.net",
+    host="mysql.hypevitro.com.br",
     user="condominiovito",
     password="F0xtr0t979",
     database="condominiovito"
@@ -81,7 +81,7 @@ def login():
 
 def validar_credenciais(username, password):
     conexao = mysql.connector.connect(
-        host="mysql.condominiovitoria.kinghost.net",
+        host="mysql.hypevitro.com.br",
         user="condominiovito",
         password="F0xtr0t979",
         database="condominiovito"
@@ -117,7 +117,7 @@ def index():
 def executar_consulta():
     # Conecte-se ao banco de dados
     conexao = mysql.connector.connect(
-        host="mysql.condominiovitoria.kinghost.net",
+        host="mysql.hypevitro.com.br",
         user="condominiovito",
         password="F0xtr0t979",
         database="condominiovito"
@@ -164,7 +164,7 @@ def resultado_consulta():
 def executar_consulta_blocos():
     # Conecte-se ao banco de dados
     conexao = mysql.connector.connect(
-        host="mysql.condominiovitoria.kinghost.net",
+        host="mysql.hypevitro.com.br",
         user="condominiovito",
         password="F0xtr0t979",
         database="condominiovito"
@@ -237,7 +237,7 @@ def atualizar_vaga_route():
 
 def atualizar_vaga(apartamento, morador, placa, veiculo, cor, tipoVeiculo, presente, usuario, id, indiceCarro):
     conexao = mysql.connector.connect(
-        host="mysql.condominiovitoria.kinghost.net",
+        host="mysql.hypevitro.com.br",
         user="condominiovito",
         password="F0xtr0t979",
         database="condominiovito"
@@ -339,7 +339,7 @@ def get_presenca_placas(bloco):
     """
 
     conexao = mysql.connector.connect(
-        host="mysql.condominiovitoria.kinghost.net",
+        host="mysql.hypevitro.com.br",
         user="condominiovito",
         password="F0xtr0t979",
         database="condominiovito"
@@ -424,7 +424,7 @@ def cadastro():
 
 def cadastrar_usuario(username, senha_hash):
     conexao = mysql.connector.connect(
-        host="mysql.condominiovitoria.kinghost.net",
+        host="mysql.hypevitro.com.br",
         user="condominiovito",
         password="F0xtr0t979",
         database="condominiovito"
@@ -471,7 +471,7 @@ def cadastroApartamento():
 
 def cadastrar_apartamento(apartamento, morador, placa, veiculo, cor, tipoVeiculo):
     conexao = mysql.connector.connect(
-        host="mysql.condominiovitoria.kinghost.net",
+        host="mysql.hypevitro.com.br",
         user="condominiovito",
         password="F0xtr0t979",
         database="condominiovito"
@@ -543,7 +543,7 @@ def crudApartamento():
 
 def update_apartamento(apartamento, morador, placa, veiculo, cor, tipoVeiculo, usuario, id):
     conexao = mysql.connector.connect(
-        host="mysql.condominiovitoria.kinghost.net",
+        host="mysql.hypevitro.com.br",
         user="condominiovito",
         password="F0xtr0t979",
         database="condominiovito"
@@ -572,7 +572,7 @@ def update_apartamento(apartamento, morador, placa, veiculo, cor, tipoVeiculo, u
 
 def get_logs(filtro_apartamento=None, filtro_placa=None):
     conexao = mysql.connector.connect(
-        host="mysql.condominiovitoria.kinghost.net",
+        host="mysql.hypevitro.com.br",
         user="condominiovito",
         password="F0xtr0t979",
         database="condominiovito"
