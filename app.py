@@ -1,4 +1,4 @@
-from flask import Flask, redirect, render_template, jsonify, request, url_for, session
+from flask import Flask, redirect, render_template, jsonify, request, send_file, url_for, session
 
 from flask_bcrypt import Bcrypt
 
@@ -10,9 +10,11 @@ import datetime
 
 from datetime import datetime
 
-bcrypt = Bcrypt()
+from openpyxl import Workbook
 
 app = Flask(__name__, template_folder="templates")
+
+bcrypt = Bcrypt(app)
 
 app.secret_key = 'F0xtr0t'  # Defina uma chave secreta única
 
@@ -50,7 +52,6 @@ def get_apartamentos():
 
   return apartamentos
 
-# ... (seu código existente) ...
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
@@ -61,23 +62,16 @@ def login():
         username = request.form['username']
         password = request.form['password']
 
-        # Faça a validação das credenciais (por exemplo, em um banco de dados)
-        if validar_credenciais(username, password):
-            # Se as credenciais são válidas, adicione 'username' à sessão e redirecione para a página principal
+         # Faça a validação das credenciais
+        acesso = validar_credenciais(username, password)
+        if acesso:
             session['username'] = username
-            session['nivel_acesso'] = validar_credenciais(username, password)[1]  # Adiciona o nível de acesso à sessão
+            session['nivel_acesso'] = acesso
             return redirect(url_for('index'))
         else:
-            # Se as credenciais são inválidas, defina a mensagem de erro na sessão
-            mensagem = "Credenciais inválidas"
-            session['mensagem'] = mensagem
+            mensagem = 'Nome de usuário ou senha incorretos'
 
-            # Redirecione para a página de login
-            return redirect(url_for('login'))
-
-    # Se o método é GET, apenas renderize a página de login
-    # Passe a mensagem diretamente para o template
-    return render_template("login.html", mensagem=session.get('mensagem'))
+    return render_template('login.html', mensagem=mensagem)
 
 def validar_credenciais(username, password):
     conexao = mysql.connector.connect(
@@ -88,20 +82,28 @@ def validar_credenciais(username, password):
     )
 
     cursor = conexao.cursor()
+    
+    # Obtenha o hash da senha e o nível de acesso armazenados no banco de dados
     cursor.execute("SELECT password_hash, nivel_acesso FROM usuarios WHERE username = %s", (username,))
     resultado = cursor.fetchone()
+    
     cursor.close()
     conexao.close()
-
-    if resultado and bcrypt.check_password_hash(resultado[0], password):
-        return True, resultado[1]  # Retorna True e o nível de acesso se as credenciais são válidas
+    
+    if resultado:
+        stored_password_hash = resultado[0]
+        nivel_acesso = resultado[1]
+        # Verifique a senha fornecida em comparação com o hash armazenado
+        if bcrypt.check_password_hash(stored_password_hash, password):
+            return nivel_acesso
+        else:
+            return None
     else:
-        return False, None  # Retorna False se as credenciais são inválidas
+        return None
 
 
 @app.route("/", methods=['GET', 'POST'])
 def index():
-    
     # Verifique se o usuário está autenticado
     if 'username' not in session:
         # Se não estiver autenticado, redirecione para a página de login
@@ -570,6 +572,31 @@ def update_apartamento(apartamento, morador, placa, veiculo, cor, tipoVeiculo, u
     conexao.close()
 
 
+
+@app.route("/logs")
+def logs():
+    # Verifique se o usuário está autenticado
+    if 'username' not in session:
+        # Se não estiver autenticado, redirecione para a página de login
+        return redirect(url_for('login'))
+    
+    # Verifique se o usuário tem permissão de administrador (ADM)
+    if session.get('nivel_acesso') != 'ADM':
+        # Se não tiver permissão, redirecione para alguma página de erro ou de acesso negado
+        return render_template("erro_acesso_negado.html")
+    
+    filtro_apartamento = request.args.get('filtro_apartamento')
+    filtro_placa = request.args.get('filtro_placa')
+    filtro_original = request.args.get('filtro_original')
+
+    if filtro_original and not (filtro_apartamento or filtro_placa):
+        return redirect(url_for('logs'))
+
+    logs = get_logs(filtro_apartamento, filtro_placa)
+    
+    return render_template("logs.html", logs=logs)
+
+
 def get_logs(filtro_apartamento=None, filtro_placa=None):
     conexao = mysql.connector.connect(
         host="mysql26-farm1.kinghost.net",
@@ -597,31 +624,50 @@ def get_logs(filtro_apartamento=None, filtro_placa=None):
     return logs
 
 
+from flask import request
 
-@app.route("/logs")
-def logs():
+@app.route("/download_logs")
+def download_logs():
     # Verifique se o usuário está autenticado
     if 'username' not in session:
-        # Se não estiver autenticado, redirecione para a página de login
         return redirect(url_for('login'))
     
     # Verifique se o usuário tem permissão de administrador (ADM)
     if session.get('nivel_acesso') != 'ADM':
-        # Se não tiver permissão, redirecione para alguma página de erro ou de acesso negado
         return render_template("erro_acesso_negado.html")
     
+    # Obtenha logs baseados nos filtros, se houver
     filtro_apartamento = request.args.get('filtro_apartamento')
     filtro_placa = request.args.get('filtro_placa')
-    filtro_original = request.args.get('filtro_original')
-
-    if filtro_original and not (filtro_apartamento or filtro_placa):
-        return redirect(url_for('logs'))
-
     logs = get_logs(filtro_apartamento, filtro_placa)
-    
-    return render_template("logs.html", logs=logs)
+
+    # Crie um arquivo Excel e adicione os logs a ele
+    excel_file = criar_excel(logs)
+
+    # Envie o arquivo Excel para download
+    return send_file(excel_file, as_attachment=True, download_name='logs.xlsx')
 
 
+from openpyxl import Workbook
+
+def criar_excel(logs):
+    # Crie um novo workbook do Excel
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Logs"
+
+    # Escreva cabeçalhos
+    ws.append(['ID', 'Usuário', 'Apartamento', 'Placa', 'Ação', 'Data', 'Hora'])
+
+    # Escreva os dados dos logs
+    for log in logs:
+        ws.append([log['id'], log['usuario'], log['apartamento'], log['placa'], log['acao'], log['data'].strftime('%d/%m/%Y'), log['hora']])
+
+    # Salve o arquivo Excel temporariamente
+    excel_file = 'temp_logs.xlsx'
+    wb.save(excel_file)
+
+    return excel_file
 
 
 
