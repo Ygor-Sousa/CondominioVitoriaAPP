@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Atualização de Apartamento</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    <h1>Atualização de Apartamento</h1>
+    
+    <form method="POST" action="{{ url_for('update') }}">
+        <label for="bloco">Bloco:</label>
+        <input type="text" name="bloco" value="{{ apartamento.bloco }}" required>
+        
+        <label for="numero">Número:</label>
+        <input type="text" name="numero" value="{{ apartamento.numero }}" required>
+        
+        <label for="morador">Morador:</label>
+        <input type="text" name="morador" value="{{ apartamento.morador }}" required>
+
+        <label for="carros">Carros:</label>
+        <textarea name="carros" required>{{ apartamento.carros }}</textarea>
+
+        <input type="submit" value="Atualizar">
+    </form>
+</body>
+</html>

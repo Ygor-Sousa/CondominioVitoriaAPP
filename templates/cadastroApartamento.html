@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Usuários</title>
+    <link rel="stylesheet" href="static/cadastroApartamento.css">
+    <script src="https://kit.fontawesome.com/ae201b47ce.js" crossorigin="anonymous"></script>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 40%;
+        }
+        .mensagem-sucesso {
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 5px;
+            position: fixed; /* Posição fixa para centralizar na tela */
+            top: 30%; /* Centraliza verticalmente */
+            left: 49%; /* Centraliza horizontalmente */
+            transform: translate(-50%, -50%); /* Move a div para o centro */
+            display: none; /* Oculta a div por padrão */
+            max-width: 300px; /* Largura máxima da div */
+            text-align: center; /* Centraliza o texto */
+        }
+    </style>
+</head>
+
+<header>
+  <div class="header-container">
+      <div class="titulo">
+        <h1 class="header-title">Condomínio Vitória</h1>
+      </div>
+      <div class="header-content">
+        {% if 'username' in session %}
+          <p>Bem-vindo, {{ session['username'] }}! Nível de Acesso: {{ session['nivel_acesso'] }}</p>
+          <a href="{{ url_for('logout') }}" class="logout-link"> Sair <i class="fas fa-sign-out-alt"></i></a>
+
+            <div class="voltar">
+              <a href="/" ><i class="fa-solid fa-arrow-left"></i></a>
+            </div>
+            {% if session['nivel_acesso'] == 'ADM' %}
+            <div class="dropdown">
+              <button class="dropbtn">Menu 
+                <i class="fa fa-caret-down"></i>
+              </button>
+              <div class="dropdown-content">
+                <a href="/" class="cadastro-link"> Home <i class="fa-solid fa-building-user"></i></a>  
+                <a href="{{ url_for('cadastroApartamento') }}" class="cadastro-link"> Cadastro <i class="fas fa-user-plus"></i></a>
+                <a href="{{ url_for('crudApartamento') }}" class="cadastro-link"> Alteração <i class="fa-solid fa-pen-to-square"></i> e Exclusão  <i class="fa-solid fa-trash"></i></i></a>
+                <a href="{{ url_for('logs') }}" class="cadastro-link"> Relatorio <i class="fas fa-user-plus"></i></a>
+              </div>
+
+          </div>
+          {% endif %}
+        {% endif %}
+      </div>
+  </div>
+</header>
+
+    <body>
+    <h1>Cadastro de Usuários</h1>
+    <div class="container">
+    <!-- Verifica se há uma mensagem de sucesso para exibir -->
+    {% if mensagem_sucesso %}
+        <div class="mensagem-sucesso" id="mensagemSucesso">{{ mensagem_sucesso }}</div>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('cadastroApartamento') }}" id="formulario-apartamento" >
+        <input type="hidden" name="id" id="id" required>
+        <input type="hidden" name="infoCarro" id="infoCarro" required>
+        <table>
+          <tr>
+            <td><label for="apartamento">Apartamento:</label></td>
+            <td><label for="morador">Morador:</label></td>
+            <td><label for="placa">Placa:</label><i onclick="rodape()" class="fas fa-search" id="search-icon"></i></td>
+            <td><label for="veiculo">Veículo:</label></td>
+            <td><label for="cor">Cor:</label></td>
+          </tr> 
+          <tr>
+            <td><input class="form" type="text" name="apartamento" id="apartamento" placeholder="Digite o Apartamento" required></td>
+            <td><input class="form" type="text" name="morador" id="morador" placeholder="Digite o nome do Morador" required></td>
+            <!-- <td><input class="form" type="text" name="placa" id="placa" required></td>    -->
+            <td id="iconePesq"><input class="form" type="text" name="placa" id="placa" placeholder="Pesquisar por placa..." required></td>
+            <td><input class="form" type="text" name="veiculo" id="veiculo" placeholder="Digite o Veiculo" required></td>
+            <td><input class="form" type="text" name="cor" id="cor" placeholder="Digite a cor"></td>
+            <td>
+                <select class="form" name="tipo_veiculo" id="tipo_veiculo" required>
+                    <option value="carro">Carro</option>
+                    <option value="moto">Moto</option>
+                </select>
+            </td>      
+          </tr>
+        </table>
+        <button id="limparPesquisa" type="submit" onclick="verificarCampos()">Cadastrar</button>
+      </form>
+
+    <footer id="rodapeCSS">
+        <div class="footer-container">
+            <p>© 2024 Condomínio Vitória. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+</div>
+    <script>
+        // Função para mostrar a mensagem de sucesso e iniciar o timer
+        function mostrarMensagem() {
+            var mensagem = document.getElementById('mensagemSucesso');
+            mensagem.style.display = 'block'; // Exibe a mensagem
+
+            // Define um timer para ocultar a mensagem após 3 segundos
+            setTimeout(function() {
+                mensagem.style.display = 'none'; // Oculta a mensagem após 3 segundos
+            }, 300000); // 3 segundos em milissegundos
+        }
+
+        function verificarCampos(){
+            console.log('Entrou na Função Verificar Campos')
+        }
+
+        // Chama a função para mostrar a mensagem quando a página carregar
+        window.onload = mostrarMensagem;
+    </script>
+</body>
+</html>
