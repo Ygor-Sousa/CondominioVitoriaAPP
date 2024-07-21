@@ -35,7 +35,7 @@ def get_apartamentos():
   )
 
   cursor = conexao.cursor()
-  cursor.execute("SELECT * FROM apartamentos")
+  cursor.execute("SELECT * FROM apartamentos ORDER BY apartamento")
 
   apartamentos = []
   for apartamento in cursor.fetchall():
