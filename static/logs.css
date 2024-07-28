@@ -47,6 +47,35 @@ a {
   transition: 0.3s;
 }
 
+/* Estilo para o botão de download */
+.btn-baixar {
+  background-color: #4CAF50; /* Cor de fundo */
+  color: white; /* Cor do texto */
+  padding: 10px 20px; /* Espaçamento interno */
+  border: none; /* Sem borda */
+  border-radius: 4px; /* Bordas arredondadas */
+  text-align: center; /* Alinhamento do texto */
+  text-decoration: none; /* Sem sublinhado */
+  display: inline-block; /* Para permitir margens e preenchimento */
+  font-size: 16px; /* Tamanho da fonte */
+  margin: 4px 2px; /* Margem */
+  cursor: pointer; /* Cursor do mouse em forma de mãozinha */
+  
+}
+
+/* Efeito ao passar o mouse */
+.btn-baixar:hover {
+  background-color: white; /* Cor de fundo ao passar o mouse */
+  color: black; /* Cor do texto ao passar o mouse */
+  border: 2px solid #4CAF50; /* Borda ao passar o mouse */
+  padding: 8px 18px; /* Espaçamento interno */
+}
+
+/* Estilo para o ícone dentro do botão */
+.btn-baixar .fa-file-excel {
+  margin-right: 8px; /* Espaçamento à direita do ícone */
+}
+
 a :hover {
   opacity: 0.7;
 } 
@@ -194,8 +223,32 @@ tbody td:last-child {
   border-bottom-right-radius: 5px; /* Adicione borda arredondada inferior direita */
 }
 
+.dibNumRegistro{
+  margin-right: 5%;
+  text-align: right;
+}
 
 
+
+.divFiltroData {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  margin-bottom: 20px;
+  justify-content: center;
+}
+
+.divFiltroData label {
+  font-weight: bold;
+  align-content: center;
+}
+
+.divFiltroData input[type="date"] {
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  max-width: 200px;
+}
 
 
 
@@ -203,6 +256,7 @@ tbody td:last-child {
 footer {
   /* position: absolute;
   bottom: 0; */
+  margin-top: 1%;
   width: 100%; /* Ocupa toda a largura da página */
   background-color: #333; /* Cor de fundo do rodapé */
   color: #fff; /* Cor do texto do rodapé */

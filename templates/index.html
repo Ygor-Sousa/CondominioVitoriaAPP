@@ -21,15 +21,17 @@
             <div class="voltar">
               <a href="/" ><i class="fa-solid fa-arrow-left"></i></a>
             </div>
-            {% if session['nivel_acesso'] == 'ADM' %}
+            {% if session['nivel_acesso'] == 'ADM' or 'SINDICO' %}
             <div class="dropdown">
               <button class="dropbtn">Menu 
                 <i class="fa fa-caret-down"></i>
               </button>
               <div class="dropdown-content">
-                <a href="/" class="cadastro-link"> Home <i class="fa-solid fa-building-user"></i></a>  
-                <a href="{{ url_for('cadastroApartamento') }}" class="cadastro-link"> Cadastro <i class="fas fa-user-plus"></i></a>
-                <a href="{{ url_for('crudApartamento') }}" class="cadastro-link"> Alteração <i class="fa-solid fa-pen-to-square"></i> e Exclusão  <i class="fa-solid fa-trash"></i></i></a>
+                <a href="/" class="cadastro-link"> Home <i class="fa-solid fa-building-user"></i></a>
+                {% if session['nivel_acesso'] == 'ADM' %}  
+                  <a href="{{ url_for('cadastroApartamento') }}" class="cadastro-link"> Cadastro <i class="fas fa-user-plus"></i></a>
+                  <a href="{{ url_for('crudApartamento') }}" class="cadastro-link"> Alteração <i class="fa-solid fa-pen-to-square"></i> e Exclusão  <i class="fa-solid fa-trash"></i></i></a>
+                {% endif %}
                 <a href="{{ url_for('logs') }}" class="cadastro-link"> Relatorio <i class="fas fa-user-plus"></i></a>
               </div>
 
@@ -364,24 +366,46 @@ function renderApartamentos(apartamentos, totais) {
             const indiceCarro = apartamento.carros.indexOf(carroEncontrado);
             document.getElementById("infoCarro").value = indiceCarro;
 
-           
+           if (apartamento.apartamento == carro.placa) {
+            console.log("deu certo" + carro.placa)
+           }
             
-            tr.innerHTML = `
+           tr.innerHTML = `
                 <td>${apartamento.apartamento}</td>
                 <td>${apartamento.morador}</td>
                 <td>${carro.veiculo}</td>
                 <td>${carro.cor}</td>
                 <td>${carro.placa}</td>
-                <td class="${toggleClass}">
-                  <input type="checkbox" id="${carro.placa}" class="checkbox" ${carro.presente ? 'checked' : ''} onchange="togglePresente(this,${indiceCarro}, ${carro.id}, '${apartamento.id}', '${apartamento.apartamento}', '${apartamento.morador}', '${carro.veiculo}', '${carro.cor}', '${carro.placa}')">
-                    <label class="label" for="${carro.placa}">
-                        <i class="fa-solid ${iconVeiculo}" style="color: #07c713;"></i>
-                        <i class="fa-solid ${iconVeiculo}" style="color: #e70a0a;"></i>
-                        <div class="ball"></div>
-                    </label> 
-                </td>
-                
+                ${apartamento.apartamento !== carro.placa ? `
+                    <td class="${toggleClass}">
+                        <input 
+                            type="checkbox" 
+                            id="${carro.placa}" 
+                            class="checkbox" 
+                            ${carro.presente ? 'checked' : ''} 
+                            onchange="togglePresente(
+                                this,
+                                ${indiceCarro}, 
+                                ${carro.id}, 
+                                '${apartamento.id}', 
+                                '${apartamento.apartamento}', 
+                                '${apartamento.morador}', 
+                                '${carro.veiculo}', 
+                                '${carro.cor}', 
+                                '${carro.placa}'
+                            )"
+                        >
+                        <label class="label" for="${carro.placa}">
+                            <i class="fa-solid ${iconVeiculo}" style="color: #07c713;"></i>
+                            <i class="fa-solid ${iconVeiculo}" style="color: #e70a0a;"></i>
+                            <div class="ball"></div>
+                        </label>
+                    </td>
+                ` : `
+                    <td>N/A</td>  <!-- Ou deixe este espaço vazio -->
+                `}
             `;
+
               
             
 

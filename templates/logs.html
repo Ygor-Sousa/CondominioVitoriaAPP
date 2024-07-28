@@ -21,15 +21,17 @@
             <div class="voltar">
               <a href="/" ><i class="fa-solid fa-arrow-left"></i></a>
             </div>
-            {% if session['nivel_acesso'] == 'ADM' %}
+            {% if session['nivel_acesso'] == 'ADM' or 'SINDICO' %}
             <div class="dropdown">
               <button class="dropbtn">Menu 
                 <i class="fa fa-caret-down"></i>
               </button>
               <div class="dropdown-content">
-                <a href="/" class="cadastro-link"> Home <i class="fa-solid fa-building-user"></i></a>  
-                <a href="{{ url_for('cadastroApartamento') }}" class="cadastro-link"> Cadastro <i class="fas fa-user-plus"></i></a>
-                <a href="{{ url_for('crudApartamento') }}" class="cadastro-link"> Alteração <i class="fa-solid fa-pen-to-square"></i> e Exclusão  <i class="fa-solid fa-trash"></i></i></a>
+                <a href="/" class="cadastro-link"> Home <i class="fa-solid fa-building-user"></i></a>
+                {% if session['nivel_acesso'] == 'ADM' %}  
+                  <a href="{{ url_for('cadastroApartamento') }}" class="cadastro-link"> Cadastro <i class="fas fa-user-plus"></i></a>
+                  <a href="{{ url_for('crudApartamento') }}" class="cadastro-link"> Alteração <i class="fa-solid fa-pen-to-square"></i> e Exclusão  <i class="fa-solid fa-trash"></i></i></a>
+                {% endif %}
                 <a href="{{ url_for('logs') }}" class="cadastro-link"> Relatorio <i class="fas fa-user-plus"></i></a>
               </div>
 
@@ -42,25 +44,33 @@
 
 <body>
 
-  <!-- Adicione este botão após a tabela de logs -->
-<div class="download-button">
-  <a href="{{ url_for('download_logs') }}" class="btn btn-primary">Baixar Logs em Excel</a>
-</div>
+
+
 
 <!-- Adicione este formulário no início do corpo da sua página -->
 <div class="form-container">
-    <form action="{{ url_for('logs') }}" method="GET">
+    <form action="{{ url_for('logs') }}" method="POST" id="filterForm">
       <h3>Filtros</h3>
       <label for="filtro_apartamento">Apartamento:</label>
-      <input type="text" name="filtro_apartamento" id="filtro_apartamento" placeholder="Digite o apartamento">
+      <input type="text" name="filtro_apartamento" id="filtro_apartamento" placeholder="Digite o apartamento" value="{{ request.form.get('filtro_apartamento', '') }}">
       <label for="filtro_placa">Placa:</label>
-      <input type="text" name="filtro_placa" id="filtro_placa" placeholder="Digite a placa">
+      <input type="text" name="filtro_placa" id="filtro_placa" placeholder="Digite a placa" value="{{ request.form.get('filtro_placa', '') }}">
+      <div class="divFiltroData">
+        <label for="filtro_data_inicio">Data Início:</label>
+        <input type="date" name="filtro_data_inicio" id="filtro_data_inicio" value="{{ request.form.get('filtro_data_inicio', '') }}">
+        <label for="filtro_data_fim">Data Fim:</label>
+        <input type="date" name="filtro_data_fim" id="filtro_data_fim" value="{{ request.form.get('filtro_data_fim', '') }}">
+      </div>
+       
+
       <input type="hidden" name="filtro_original" value="">
-        <div class="dibButtons">
-            <button type="submit">Filtrar</button>
-            <button type="button" onclick="limparFiltro()">Limpar filtro</button>
-        </div>
-    </form>
+      <div class="dibButtons">
+          <button type="submit">Filtrar</button>
+          <button type="button" onclick="limparFiltro()">Limpar filtro</button>
+          <button id="download-button" class="btn-baixar"><i class="fas fa-file-excel"></i> Baixar Logs em Excel</button>
+      </div>
+  </form>
+
   </div>
   
   
@@ -78,7 +88,7 @@
         </thead>
         <tbody>
             <!-- Ajuste o loop para iterar apenas sobre os últimos 10 registros -->
-                {% for log in logs[::-1][:10] %}
+                {% for log in logs[::-1] [:num_registros] %}
                 <tr>
                     <td>{{ log.id }}</td>
                     <td>{{ log.usuario }}</td>
@@ -92,16 +102,87 @@
         </tbody>
     </table>
 
+    <div class="dibNumRegistro">
+      <label for="num_registros">Número de Registros:</label>
+      <select name="num_registros" id="num_registros" form="filterForm">
+        <option value="10" {% if num_registros == 10 %}selected{% endif %}>10</option>
+        <option value="20" {% if num_registros == 20 %}selected{% endif %}>20</option>
+        <option value="50" {% if num_registros == 50 %}selected{% endif %}>50</option>
+        <option value="100" {% if num_registros == 100 %}selected{% endif %}>100</option>
+      </select>
+    </div>
+
 
     <script>
-        function limparFiltro() {
-          // Limpa o valor do campo de texto
-          document.getElementById('filtro_apartamento').value = '';
-          // Atualiza o valor do campo de texto oculto para o valor original do filtro
-          document.querySelector('input[name="filtro_original"]').value = '';
-          // Envia o formulário
-          document.querySelector('form').submit();
+
+          function updateURL() {
+            var formData = new FormData(document.getElementById('filterForm'));
+            var numRegistros = document.getElementById('num_registros').value;
+            formData.append('num_registros', numRegistros);
+
+            fetch('{{ url_for("logs") }}', {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.text())
+            .then(html => {
+                var newDoc = document.open("text/html", "replace");
+                newDoc.write(html);
+                newDoc.close();
+                document.getElementById('num_registros').value = numRegistros;
+            });
         }
+
+        function limparFiltro() {
+            // Limpar os valores dos campos de filtro
+            document.getElementById('filtro_apartamento').value = '';
+            document.getElementById('filtro_placa').value = '';
+            document.getElementById('filtro_data_inicio').value = '';
+            document.getElementById('filtro_data_fim').value = '';
+            document.getElementById('num_registros').value = '10'; // Valor padrão
+
+            // Atualizar a URL com os valores limpos
+            updateURL();
+        }
+        
+        document.getElementById('filterForm').addEventListener('submit', function(event) {
+          event.preventDefault();
+          updateURL();
+        });
+
+        document.getElementById('num_registros').addEventListener('change', function() {
+          updateURL();
+        });
+
+
+        document.getElementById('filtro_data_inicio').addEventListener('change', function() {
+            const dataInicio = this.value;
+            const dataFimInput = document.getElementById('filtro_data_fim');
+
+            if (!dataFimInput.value) {
+                dataFimInput.value = dataInicio;
+            }
+        });
+
+          // Função para fazer o download dos logs
+          function downloadLogs() {
+              var filtroApartamento = document.getElementById('filtro_apartamento').value;
+              var filtroPlaca = document.getElementById('filtro_placa').value;
+              var filtroDataInicio = document.getElementById('filtro_data_inicio').value;
+              var filtroDataFim = document.getElementById('filtro_data_fim').value;
+
+              var downloadURL = `{{ url_for('download_logs') }}?filtro_apartamento=${filtroApartamento}&filtro_placa=${filtroPlaca}&filtro_data_inicio=${filtroDataInicio}&filtro_data_fim=${filtroDataFim}`;
+
+              window.location.href = downloadURL;
+          }
+
+          document.getElementById('download-button').addEventListener('click', function(event) {
+              event.preventDefault();
+              downloadLogs();
+          });
+
+
+
       </script>
 
 

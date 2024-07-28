@@ -47,15 +47,17 @@
             <div class="voltar">
               <a href="/" ><i class="fa-solid fa-arrow-left"></i></a>
             </div>
-            {% if session['nivel_acesso'] == 'ADM' %}
+            {% if session['nivel_acesso'] == 'ADM' or 'SINDICO' %}
             <div class="dropdown">
               <button class="dropbtn">Menu 
                 <i class="fa fa-caret-down"></i>
               </button>
               <div class="dropdown-content">
-                <a href="/" class="cadastro-link"> Home <i class="fa-solid fa-building-user"></i></a>  
-                <a href="{{ url_for('cadastroApartamento') }}" class="cadastro-link"> Cadastro <i class="fas fa-user-plus"></i></a>
-                <a href="{{ url_for('crudApartamento') }}" class="cadastro-link"> Alteração <i class="fa-solid fa-pen-to-square"></i> e Exclusão  <i class="fa-solid fa-trash"></i></i></a>
+                <a href="/" class="cadastro-link"> Home <i class="fa-solid fa-building-user"></i></a>
+                {% if session['nivel_acesso'] == 'ADM' %}  
+                  <a href="{{ url_for('cadastroApartamento') }}" class="cadastro-link"> Cadastro <i class="fas fa-user-plus"></i></a>
+                  <a href="{{ url_for('crudApartamento') }}" class="cadastro-link"> Alteração <i class="fa-solid fa-pen-to-square"></i> e Exclusão  <i class="fa-solid fa-trash"></i></i></a>
+                {% endif %}
                 <a href="{{ url_for('logs') }}" class="cadastro-link"> Relatorio <i class="fas fa-user-plus"></i></a>
               </div>
 
