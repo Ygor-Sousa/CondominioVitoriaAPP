@@ -130,13 +130,24 @@ def executar_consulta():
     # Execute a consulta SQL
     cursor.execute("""
         SELECT
-          bloco,
-          SUM(CASE WHEN JSON_CONTAINS(placa, '{"presente": true}') THEN 1 ELSE 0 END) AS placas_presentes,
-          SUM(CASE WHEN JSON_CONTAINS(placa, '{"presente": false}') THEN 1 ELSE 0 END) AS placas_ausentes
+            bloco,
+            SUM(CASE 
+                WHEN JSON_EXTRACT(placa, '$[0].presente') = 'true' 
+                    AND JSON_EXTRACT(placa, '$[0].placa') != ''
+                THEN 1 
+                ELSE 0 
+            END) AS placas_presentes,
+            SUM(CASE 
+                WHEN JSON_EXTRACT(placa, '$[0].presente') = 'false' 
+                    AND JSON_EXTRACT(placa, '$[0].placa') != ''
+                	AND apartamento != JSON_EXTRACT(placa, '$[0].placa')
+                THEN 1 
+                ELSE 0 
+            END) AS placas_ausentes
         FROM
-          apartamentos
+            apartamentos
         GROUP BY
-          bloco;
+            bloco
     """)
 
     # Obtenha os resultados como uma lista de dicionários
@@ -177,13 +188,24 @@ def executar_consulta_blocos():
     # Execute a consulta SQL
     cursor.execute("""
         SELECT
-          bloco,
-          SUM(CASE WHEN JSON_CONTAINS(placa, '{"presente": true}') THEN 1 ELSE 0 END) AS placas_presentes,
-          SUM(CASE WHEN JSON_CONTAINS(placa, '{"presente": false}') THEN 1 ELSE 0 END) AS placas_ausentes
+            bloco,
+            SUM(CASE 
+                WHEN JSON_EXTRACT(placa, '$[0].presente') = 'true' 
+                    AND JSON_EXTRACT(placa, '$[0].placa') != ''
+                THEN 1 
+                ELSE 0 
+            END) AS placas_presentes,
+            SUM(CASE 
+                WHEN JSON_EXTRACT(placa, '$[0].presente') = 'false' 
+                    AND JSON_EXTRACT(placa, '$[0].placa') != ''
+                	AND apartamento != JSON_EXTRACT(placa, '$[0].placa')
+                THEN 1 
+                ELSE 0 
+            END) AS placas_ausentes
         FROM
-          apartamentos
+            apartamentos
         GROUP BY
-          bloco;
+            bloco
     """)
 
     # Obtenha os resultados
@@ -412,19 +434,20 @@ def cadastro():
         # Recupere os dados do formulário
         username = request.form['username']
         senha = request.form['senha']
+        nivelAcesso = request.form['tipo_usuario']
 
         # Hash da senha usando bcrypt
         senha_hash = bcrypt.generate_password_hash(senha).decode('utf-8')
 
         # Insira o usuário no banco de dados
-        cadastrar_usuario(username, senha_hash)
+        cadastrar_usuario(username, senha_hash, nivelAcesso)
 
         # Defina a mensagem de sucesso
         mensagem_sucesso = "Usuário cadastrado com sucesso!"
 
     return render_template("cadastro.html", mensagem_sucesso=mensagem_sucesso)
 
-def cadastrar_usuario(username, senha_hash):
+def cadastrar_usuario(username, senha_hash, nivelAcesso):
     conexao = mysql.connector.connect(
         host="mysql26-farm1.kinghost.net",
         user="condominiovito",
@@ -433,7 +456,7 @@ def cadastrar_usuario(username, senha_hash):
     )
 
     cursor = conexao.cursor()
-    cursor.execute("INSERT INTO usuarios (username, password_hash) VALUES (%s, %s)", (username, senha_hash))
+    cursor.execute("INSERT INTO usuarios (username, password_hash, nivel_acesso) VALUES (%s, %s, %s)", (username, senha_hash, nivelAcesso))
     conexao.commit()
     cursor.close()
     conexao.close()
@@ -450,7 +473,7 @@ def cadastroApartamento():
     mensagem_sucesso = None
 
     # Verifique se o usuário tem permissão de administrador (ADM)
-    if session.get('nivel_acesso') != 'ADM':
+    if session.get('nivel_acesso') not in ['ADM', 'SINDICO']:
         # Se não tiver permissão, redirecione para alguma página de erro ou de acesso negado
         return render_template("erro_acesso_negado.html")
 
@@ -515,7 +538,7 @@ def crudApartamento():
         return redirect(url_for('login'))
     
     # Verifique se o usuário tem permissão de administrador (ADM)
-    if session.get('nivel_acesso') != 'ADM':
+    if session.get('nivel_acesso')  not in ['ADM', 'SINDICO']:
         # Se não tiver permissão, redirecione para alguma página de erro ou de acesso negado
         return render_template("erro_acesso_negado.html")
 
@@ -573,31 +596,35 @@ def update_apartamento(apartamento, morador, placa, veiculo, cor, tipoVeiculo, u
 
 
 
-@app.route("/logs")
+@app.route("/logs", methods=["GET", "POST"])
 def logs():
-    # Verifique se o usuário está autenticado
     if 'username' not in session:
-        # Se não estiver autenticado, redirecione para a página de login
         return redirect(url_for('login'))
     
-    # Verifique se o usuário tem permissão de administrador (ADM)
-    if session.get('nivel_acesso') != 'ADM':
-        # Se não tiver permissão, redirecione para alguma página de erro ou de acesso negado
+    if session.get('nivel_acesso') not in ['ADM', 'SINDICO']:
         return render_template("erro_acesso_negado.html")
     
-    filtro_apartamento = request.args.get('filtro_apartamento')
-    filtro_placa = request.args.get('filtro_placa')
-    filtro_original = request.args.get('filtro_original')
+    if request.method == 'POST':
+        filtro_apartamento = request.form.get('filtro_apartamento')
+        filtro_placa = request.form.get('filtro_placa')
+        filtro_data_inicio = request.form.get('filtro_data_inicio')
+        filtro_data_fim = request.form.get('filtro_data_fim')
+        num_registros = request.form.get('num_registros', default=10, type=int)
+    else:
+        filtro_apartamento = request.args.get('filtro_apartamento')
+        filtro_placa = request.args.get('filtro_placa')
+        filtro_data_inicio = request.args.get('filtro_data_inicio')
+        filtro_data_fim = request.args.get('filtro_data_fim')
+        num_registros = request.args.get('num_registros', default=10, type=int)
 
-    if filtro_original and not (filtro_apartamento or filtro_placa):
-        return redirect(url_for('logs'))
-
-    logs = get_logs(filtro_apartamento, filtro_placa)
+    logs = get_logs(filtro_apartamento, filtro_placa, filtro_data_inicio, filtro_data_fim)
     
-    return render_template("logs.html", logs=logs)
+    return render_template("logs.html", logs=logs, num_registros=num_registros)
 
 
-def get_logs(filtro_apartamento=None, filtro_placa=None):
+
+
+def get_logs(filtro_apartamento=None, filtro_placa=None, filtro_data_inicio=None, filtro_data_fim=None):
     conexao = mysql.connector.connect(
         host="mysql26-farm1.kinghost.net",
         user="condominiovito",
@@ -607,15 +634,23 @@ def get_logs(filtro_apartamento=None, filtro_placa=None):
 
     cursor = conexao.cursor(dictionary=True)
 
-    if filtro_apartamento and filtro_placa:
-        cursor.execute("SELECT * FROM logs WHERE apartamento LIKE %s AND placa LIKE %s", ('%' + filtro_apartamento + '%', '%' + filtro_placa + '%'))
-    elif filtro_apartamento:
-        cursor.execute("SELECT * FROM logs WHERE apartamento LIKE %s", ('%' + filtro_apartamento + '%',))
-    elif filtro_placa:
-        cursor.execute("SELECT * FROM logs WHERE placa LIKE %s", ('%' + filtro_placa + '%',))
-    else:
-        cursor.execute("SELECT * FROM logs")
+    query = "SELECT * FROM logs WHERE 1=1"
+    params = []
 
+    if filtro_apartamento:
+        query += " AND apartamento LIKE %s"
+        params.append('%' + filtro_apartamento + '%')
+    if filtro_placa:
+        query += " AND placa LIKE %s"
+        params.append('%' + filtro_placa + '%')
+    if filtro_data_inicio:
+        query += " AND data >= %s"
+        params.append(filtro_data_inicio)
+    if filtro_data_fim:
+        query += " AND data <= %s"
+        params.append(filtro_data_fim)
+
+    cursor.execute(query, tuple(params))
     logs = cursor.fetchall()
 
     cursor.close()
@@ -624,28 +659,26 @@ def get_logs(filtro_apartamento=None, filtro_placa=None):
     return logs
 
 
+
 from flask import request
 
 @app.route("/download_logs")
 def download_logs():
-    # Verifique se o usuário está autenticado
     if 'username' not in session:
         return redirect(url_for('login'))
     
-    # Verifique se o usuário tem permissão de administrador (ADM)
     if session.get('nivel_acesso') != 'ADM':
         return render_template("erro_acesso_negado.html")
     
-    # Obtenha logs baseados nos filtros, se houver
     filtro_apartamento = request.args.get('filtro_apartamento')
     filtro_placa = request.args.get('filtro_placa')
-    logs = get_logs(filtro_apartamento, filtro_placa)
+    filtro_data_inicio = request.args.get('filtro_data_inicio')
+    filtro_data_fim = request.args.get('filtro_data_fim')
+    logs = get_logs(filtro_apartamento, filtro_placa, filtro_data_inicio, filtro_data_fim)
 
-    # Crie um arquivo Excel e adicione os logs a ele
     excel_file = criar_excel(logs)
-
-    # Envie o arquivo Excel para download
     return send_file(excel_file, as_attachment=True, download_name='logs.xlsx')
+
 
 
 from openpyxl import Workbook
